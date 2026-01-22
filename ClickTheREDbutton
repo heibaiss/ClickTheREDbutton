@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>大红按钮配置器</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 50px; background-color: #f4f4f4; }
+        .container { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { color: #d32f2f; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; background-color: #d32f2f; color: white; border: none; border-radius: 5px; margin: 10px; }
+        button:disabled { background-color: #ccc; }
+        input { padding: 10px; font-size: 16px; width: 50px; text-align: center; border: 2px solid #ddd; border-radius: 5px; }
+        #status { margin-top: 20px; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🔴 大红按钮配置器</h1>
+    <p>第一步：连接设备</p>
+    <button id="connectBtn">🔌 连接按钮设备</button>
+    
+    <div id="controlPanel" style="display:none; margin-top:30px; border-top:1px solid #eee; padding-top:20px;">
+        <p>第二步：输入你想绑定的新按键（单个字符）</p>
+        <input type="text" id="newKeyInput" maxlength="1" value="3">
+        <button id="sendBtn">💾 保存修改</button>
+    </div>
+
+    <p id="status">等待连接...</p>
+</div>
+
+<script>
+    let port;
+    let writer;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+    const controlPanel = document.getElementById('controlPanel');
+    const newKeyInput = document.getElementById('newKeyInput');
+
+    connectBtn.addEventListener('click', async () => {
+        try {
+            // 请求串口权限
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 9600 }); // 波特率对于虚拟串口不重要，但必须填
+            
+            status.innerText = "✅ 已连接！";
+            connectBtn.disabled = true;
+            connectBtn.innerText = "已连接";
+            controlPanel.style.display = "block";
+            
+            // 准备写入流
+            const textEncoder = new TextEncoderStream();
+            const writableStreamClosed = textEncoder.readable.pipeTo(port.writable);
+            writer = textEncoder.writable.getWriter();
+
+        } catch (err) {
+            console.error(err);
+            status.innerText = "❌ 连接失败: " + err;
+        }
+    });
+
+    sendBtn.addEventListener('click', async () => {
+        const charToSend = newKeyInput.value;
+        if (!charToSend) return;
+
+        if (writer) {
+            try {
+                status.innerText = "⏳ 正在发送...";
+                await writer.write(charToSend);
+                status.innerText = `🎉 成功！按钮功能已修改为: "${charToSend}"`;
+            } catch (err) {
+                status.innerText = "❌ 发送失败";
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
