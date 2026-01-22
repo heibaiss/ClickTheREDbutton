@@ -6,15 +6,8 @@
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; }
-        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: inline-block; max-width: 400px; }
-        
-        /* 矢量图容器样式 */
-        #canvas-container {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 20px;
-        }
-
+        .container { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: inline-block; max-width: 450px; }
+        #canvas-container { width: 200px; height: 200px; margin: 0 auto 20px; }
         h1 { color: #d32f2f; margin-bottom: 10px; }
         button { 
             padding: 12px 25px; font-size: 16px; cursor: pointer; 
@@ -24,7 +17,7 @@
         button:hover { background: #b71c1c; transform: translateY(-2px); }
         button:disabled { background-color: #ccc; transform: none; }
         input { padding: 10px; font-size: 16px; width: 60px; text-align: center; border: 2px solid #ddd; border-radius: 10px; }
-        #status { margin-top: 20px; color: #777; font-size: 14px; }
+        #status { margin-top: 20px; color: #777; font-size: 14px; border-top: 1px solid #eee; padding-top: 15px; }
     </style>
 </head>
 <body>
@@ -45,21 +38,69 @@
     
     <button id="connectBtn">🔌 连接设备</button>
     
-    <div id="controlPanel" style="display:none;">
+    <div id="controlPanel" style="display:none; margin-top: 20px;">
         <p>设置按下按钮输入的字符：</p>
         <input type="text" id="newKeyInput" maxlength="1" value="3">
-        <button id="sendBtn">确认修改</button>
+        <button id="sendBtn">💾 确认修改并保存</button>
     </div>
 
-    <p id="status">请先连接你的 CH552G 设备</p>
+    <p id="status">提示：请使用 Chrome 或 Edge 浏览器打开</p>
 </div>
 
 <script>
-    // ... 这里保留你之前的 Web Serial API 脚本代码 ...
-    // (为了简洁，脚本部分参考之前的回复，确保逻辑一致即可)
-    
-    // 关键点：确保 lottie-player 的 src 属性指向你的 1.json
-    // 如果你在同一个目录下，直接写 "1.json" 即可。
+    let port;
+    let writer;
+
+    const connectBtn = document.getElementById('connectBtn');
+    const sendBtn = document.getElementById('sendBtn');
+    const status = document.getElementById('status');
+    const controlPanel = document.getElementById('controlPanel');
+    const newKeyInput = document.getElementById('newKeyInput');
+
+    // 连接逻辑
+    connectBtn.addEventListener('click', async () => {
+        if (!navigator.serial) {
+            status.innerText = "❌ 错误：你的浏览器不支持 Web Serial API，请换用 Chrome 或 Edge。";
+            return;
+        }
+
+        try {
+            status.innerText = "⏳ 正在请求连接...";
+            port = await navigator.serial.requestPort();
+            await port.open({ baudRate: 9600 });
+            
+            status.innerText = "✅ 设备已连接！现在可以修改按键了。";
+            connectBtn.disabled = true;
+            connectBtn.innerText = "已连接";
+            controlPanel.style.display = "block";
+            
+            const textEncoder = new TextEncoderStream();
+            textEncoder.readable.pipeTo(port.writable);
+            writer = textEncoder.writable.getWriter();
+        } catch (err) {
+            console.error(err);
+            status.innerText = "❌ 连接取消或失败：" + err.message;
+        }
+    });
+
+    // 发送逻辑
+    sendBtn.addEventListener('click', async () => {
+        const charToSend = newKeyInput.value;
+        if (!charToSend) {
+            alert("请输入一个字符！");
+            return;
+        }
+
+        if (writer) {
+            try {
+                status.innerText = "⏳ 正在写入设备 EEPROM...";
+                await writer.write(charToSend);
+                status.innerText = `🎉 成功！按钮已修改为: "${charToSend}" (掉电不丢失)`;
+            } catch (err) {
+                status.innerText = "❌ 写入失败，请检查连接。";
+            }
+        }
+    });
 </script>
 
 </body>
