@@ -2,17 +2,20 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>大红按钮配置器</title>
+    <title>不要按大红按钮</title>
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; overflow: hidden; /* 防止滚动条出现 */ }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; overflow: hidden; }
         .container { 
             background: white; padding: 40px; border-radius: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: inline-block; 
-            max-width: 450px; position: relative; z-index: 10; /* 保证面板在特效前面 */
+            max-width: 450px; position: relative; z-index: 10; 
         }
         #canvas-container { width: 200px; height: 200px; margin: 0 auto 20px; }
-        h1 { color: #d32f2f; margin-bottom: 10px; }
+        
+        /* 标题样式微调，增加一点警示感 */
+        h1 { color: #d32f2f; margin-bottom: 10px; font-weight: 900; letter-spacing: 1px; }
+        
         button { 
             padding: 12px 25px; font-size: 16px; cursor: pointer; 
             background: #d32f2f; color: white; border: none; 
@@ -23,14 +26,13 @@
         input { padding: 10px; font-size: 16px; width: 60px; text-align: center; border: 2px solid #ddd; border-radius: 10px; }
         #status { margin-top: 20px; color: #777; font-size: 14px; border-top: 1px solid #eee; padding-top: 15px; }
 
-        /* --- 新增：飘浮特效的样式 --- */
         .floating-icon {
             position: fixed;
-            bottom: -150px; /* 从屏幕底部下方起飞 */
-            width: 150px;    /* 图标大小，可调整 */
+            bottom: -150px; 
+            width: 150px;    
             height: 150px;
-            pointer-events: none; /* 让鼠标能透过它点击后面的东西 */
-            z-index: 1;      /* 在背景层 */
+            pointer-events: none; 
+            z-index: 1;      
             opacity: 0.8;
         }
     </style>
@@ -49,21 +51,21 @@
         </lottie-player>
     </div>
 
-    <h1>大红按钮配置</h1>
+    <h1>⚠️ 不要按大红按钮</h1>
     
-    <button id="connectBtn">🔌 连接设备</button>
+    <button id="connectBtn">🔌 连接按钮设备</button>
     
     <div id="controlPanel" style="display:none; margin-top: 20px;">
-        <p>设置按下按钮输入的字符：</p>
+        <p>如果非要修改按键值...</p>
         <input type="text" id="newKeyInput" maxlength="1" value="3">
-        <button id="sendBtn">💾 确认修改并保存</button>
+        <button id="sendBtn">💾 既然你非要改...</button>
     </div>
 
-    <p id="status">提示：点击任意位置或按下大红按钮查看特效</p>
+    <p id="status">提示：真的，别按它。</p>
 </div>
 
 <script>
-    // --- 串口相关逻辑 (保持不变) ---
+    // --- 串口部分 (保持不变) ---
     let port;
     let writer;
 
@@ -75,13 +77,13 @@
 
     connectBtn.addEventListener('click', async () => {
         if (!navigator.serial) {
-            status.innerText = "❌ 浏览器不支持串口，请用 Chrome/Edge";
+            status.innerText = "❌ 浏览器不支持串口";
             return;
         }
         try {
             port = await navigator.serial.requestPort();
             await port.open({ baudRate: 9600 });
-            status.innerText = "✅ 设备已连接！";
+            status.innerText = "✅ 你连接了它...希望你知道自己在做什么。";
             connectBtn.disabled = true;
             connectBtn.innerText = "已连接";
             controlPanel.style.display = "block";
@@ -97,61 +99,39 @@
         const charToSend = newKeyInput.value;
         if (writer && charToSend) {
             await writer.write(charToSend);
-            status.innerText = `🎉 已写入: "${charToSend}"`;
+            status.innerText = `🎉 完蛋，按键变成了: "${charToSend}"`;
         }
     });
 
-    // --- 新增：按键特效逻辑 ---
-    
-    // 监听键盘按下事件
+    // --- 特效部分 (已添加随机延迟) ---
+
     document.addEventListener('keydown', (event) => {
-        spawnFloatingIcon();
+        triggerRandomEffect();
     });
 
-    // 也可以监听鼠标点击（可选）
     document.addEventListener('mousedown', () => {
-        spawnFloatingIcon();
+        triggerRandomEffect();
     });
+
+    function triggerRandomEffect() {
+        // 生成一个 0 到 300 毫秒之间的随机延迟
+        // 这样如果你快速连按，图标不会像排队一样出来，而是会有“参差感”
+        const randomDelay = Math.random() * 300;
+
+        setTimeout(() => {
+            spawnFloatingIcon();
+        }, randomDelay);
+    }
 
     function spawnFloatingIcon() {
-        // 1. 创建一个新的 Lottie 播放器元素
         const el = document.createElement('lottie-player');
-        el.src = '1.json'; // 指向你的文件
+        el.src = '1.json'; 
         el.autoplay = true;
         el.loop = true;
-        el.classList.add('floating-icon'); // 添加样式类
+        el.classList.add('floating-icon');
 
-        // 2. 随机位置和角度
-        // 随机出现在屏幕宽度的 10% 到 90% 之间
+        // 位置随机 (10% - 90%)
         const randomLeft = Math.floor(Math.random() * 80) + 10; 
-        // 随机旋转 -30度 到 30度
-        const randomRotate = Math.floor(Math.random() * 60) - 30; 
-        // 随机大小 (0.8倍 到 1.5倍)
-        const randomScale = (Math.random() * 0.7) + 0.8;
-
-        el.style.left = randomLeft + '%';
-        el.style.transform = `rotate(${randomRotate}deg) scale(${randomScale})`;
-
-        // 3. 将元素添加到网页中
-        document.body.appendChild(el);
-
-        // 4. 使用 Web Animation API 制作起飞动画
-        const animation = el.animate([
-            // 初始状态
-            { transform: `translateY(0px) rotate(${randomRotate}deg) scale(${randomScale})`, opacity: 1 },
-            // 结束状态 (往上飘 800px，并且稍微侧移)
-            { transform: `translateY(-800px) rotate(${randomRotate * 2}deg) scale(${randomScale})`, opacity: 0 }
-        ], {
-            duration: 2000, // 动画持续 2 秒
-            easing: 'ease-out' // 速度由快变慢
-        });
-
-        // 5. 动画结束后，把元素从内存中删除，防止网页变卡
-        animation.onfinish = () => {
-            el.remove();
-        };
-    }
-</script>
-
-</body>
-</html>
+        // 角度随机 (-45度 到 +45度) -> 增加了一些倾斜幅度
+        const randomRotate = Math.floor(Math.random() * 90) - 45; 
+        // 大小随机 (
