@@ -5,13 +5,11 @@
     <title>绝对不要按大红按钮</title>
     <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; overflow: hidden; }
+        body { font-family: 'Segoe UI', sans-serif; text-align: center; padding: 20px; background-color: #f4f4f4; overflow: hidden; -webkit-user-select: none; /* 兼容 Chrome/Safari/Edge */ user-select: none; /* 标准属性 */}
         .container { 
             background: white; padding: 40px; border-radius: 20px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.1); display: inline-block; 
             max-width: 450px; position: relative; z-index: 10; 
-            -webkit-user-select: none; /* 兼容 Chrome/Safari/Edge */
-            user-select: none;         /* 标准属性 */
         }
         #canvas-container { width: 200px; height: 200px; margin: 0 auto 20px; }
         
